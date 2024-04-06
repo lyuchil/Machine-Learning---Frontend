@@ -36,12 +36,14 @@ function Game({ players, room, orientation, cleanup }) {
   }, [chess]);
 
   function onDrop(source, target) {
+    console.log(source, target)
     const move_data = {
         from:source,
         to:target,
         color:chess.turn(),
-        promotion: target.promotion
+        promotion: "q"
     };
+    console.log(chess.promotion)
 
     const move = makeMove(move_data);
 

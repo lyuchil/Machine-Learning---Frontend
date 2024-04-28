@@ -1,6 +1,6 @@
-import { useState } from 'react'
+
 import { Container } from "@mui/material";
-import Game from "./Game";
+import Game from "./Game.jsx";
 
 export default function App() {
   return (

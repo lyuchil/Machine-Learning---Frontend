@@ -8,7 +8,7 @@ function Game({ players, room, orientation, cleanup }) {
   const [fen, setFen] = useState(chess.fen()); // <- 2
   const [over, setOver] = useState("");
   const [playerTime, setPlayerTime] = useState({
-    w: 600
+    w: 20
   })
   const [modelTime, setModelTime] = useState({
     model:600
@@ -19,63 +19,86 @@ function Game({ players, room, orientation, cleanup }) {
     m: false
   })
 
+  const [previousMoves, setPreviousMoves] = useState([])
+
   useEffect(()=> {
+    const fetchModel = async () =>{
+      if(currentTurn === 'b'){
+        try{
+          const gameState = {
+            previousMove:previousMoves[0],
+            previousMoveTwo:previousMoves[1],
+            pgn:chess.pgn()
+          };
+          const castlingRights = {
+            player: chess.getCastlingRights("w"),
+            model: chess.getCastlingRights("b")
+          }
+          const modelMeta = [modelTime, 0, castlingRights.player.q, castlingRights.player.k, castlingRights.model.q, castlingRights.model.k]
+    
+          const body = {
+            gameState,
+            modelMeta
+          }
+          const response = await fetch("/whatever/the/endpoint/is", {
+            method: 'POST',
+            body
+          })
+          const data = await response.json();
+          setModelTime(data.updatedModelTime)
+          onDrop(data.source, data.target, data.piece)
+        }
+        catch (error){
+          console.error("Failed to get move from model: ", error)
+        }
+      }
+  
+    }
     fetchModel();
 
-  }, []);
+  }, [currentTurn, chess, modelTime, previousMoves]);
 
-  const fetchModel = async () =>{
-    try{
-      const gameBoard = chess.board();
-      const castlingRights = {
-        player: chess.getCastlingRights("w"),
-        model: chess.getCastlingRights("b")
-      }
-      const body = {
-        gameBoard,
-        castlingRights,
-        modelTime
-      }
-      const response = await fetch("/whatever/the/endpoint/is", {
-        method: 'POST',
-        body
-      })
-      const data = await response.json();
-      setModelTime(data.updatedModelTime)
-      onDrop(data.source, data.target, data.piece)
-    }
-    catch (error){
-      console.error("Failed to get move from model: ", error)
-    }
-  }
+  
 
   useEffect(() => {
     const timer = setInterval(() =>{
-      if(chess.isGameOver()){
+      if(chess.isGameOver() ){
         clearInterval(timer);
       }
       else{
+        if(currentTurn === 'b'){
+          console.log("hi i update somewhere else")
+        }
+        else{
         setPlayerTime(prevTime => ({
           ...prevTime,
-          [currentTurn] : prevTime[currentTurn] - 1
+          [currentTurn] : (prevTime[currentTurn] > 0)? prevTime[currentTurn] - 1: 0
         }));
+        if ((currentTurn)=="w"? playerTime<=0: modelTime<=0){
+          setEndByTime((playerTime, modelTime) => {
+            return {
+              w: (playerTime.w <=0),
+              m: (modelTime.model <=0)
+            }
+          })
+        }
       }
+    }
     }, 1000);
     return ()=>clearInterval(timer);
-  },[currentTurn, chess]);
+  },[currentTurn, chess, playerTime, modelTime]);
 
   const makeMove = useCallback((move) => {
     try{
-      console.log(move)
         const rst = chess.move(move);
         setFen(chess.fen());
         setCurrentTurn(chess.turn())
-        if(playerTime.w <=0){
-          setEndByTime({w:true, m:false})
-        }
-        else if(modelTime.model <=0){
-          setEndByTime({w:false,m:true})
-        }
+        setEndByTime((playerTime, modelTime) => {
+          return {
+            w: (playerTime.w <=0),
+            m: (modelTime.model <=0)
+          }
+        })
 
         console.log("ov, cm", chess.isGameOver(), chess.isCheckmate());
         if(chess.isGameOver()){
@@ -91,7 +114,7 @@ function Game({ players, room, orientation, cleanup }) {
                 setOver("Game over");
             }
         }
-        else if(endByTime.w || endByTime.m){
+        if(endByTime.w || endByTime.m){
           if(endByTime.w){
             setOver(
               'Black won by time!'
@@ -103,13 +126,12 @@ function Game({ players, room, orientation, cleanup }) {
             )
           }
         }
-
         return rst;
     }
     catch(e){
         return null;
     } 
-  }, [chess]);
+  }, [chess, playerTime, modelTime]);
 
   function onDrop(source, target, piece) {
     //console.log(source, target)
@@ -123,14 +145,37 @@ function Game({ players, room, orientation, cleanup }) {
 
     const move = makeMove(move_data);
 
-    console.log(chess.board())
     console.log(move)
+    console.log(chess.pgn())
     console.log(chess.moves({verbose: true}))
     console.log(chess.getCastlingRights("w"))
-
+    console.log(previousMoves)
     if(move === null) return false;
+
+    setPreviousMoves((prevMoves) => {
+      if(prevMoves.length >= 3){
+        const newMoves = prevMoves.concat({
+          from: move.from,
+          to:move.to,
+          piece: move.piece,
+          promotion: (move.flags.search('p') !== -1)? move.promotion : "none",
+          color: (move.color == 'w')
+        })
+        return newMoves.slice(-3)
+      }
+      else{
+        return prevMoves.concat({
+          from: move.from,
+          to:move.to,
+          piece: move.piece,
+          promotion: (move.flags.search('p') !== -1)? move.promotion : "none",
+          color: (move.color == 'w')
+        })
+      }
+
+    })
     return true;
-  } // <- 3
+  } 
   
   // Game component returned jsx
   return (

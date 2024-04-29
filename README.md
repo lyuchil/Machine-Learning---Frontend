@@ -5,4 +5,4 @@
     [] Update fetch as needed for model inputs
     [] styling
     [] fix board scaling
-    [] adjust timer code for model
+    [] Confirm how time is being sent *back* from the model so we can update accordingly. Have both elapsed and remaining time implemented

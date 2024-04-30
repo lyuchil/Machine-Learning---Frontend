@@ -24,7 +24,7 @@ function Game({ players, room, orientation, cleanup }) {
   useEffect(()=> {
     const fetchModel = async () =>{
       console.log(previousMoves)
-      if(currentTurn === 'b'){
+      if(currentTurn === 'b' && !chess.isGameOver() && !(endByTime.m || endByTime.w)){
         try{
           const gameState = {
             previousMoveTwo:previousMoves.length > 1? previousMoves[0]: null,
@@ -36,37 +36,38 @@ function Game({ players, room, orientation, cleanup }) {
             model: chess.getCastlingRights("b")
           }
           const modelMeta = [modelTime.model, 0, castlingRights.player.q, castlingRights.player.k, castlingRights.model.q, castlingRights.model.k]
-    
-          const body = {
+
+          const body = JSON.stringify({
             gameState,
             modelMeta
-          }
+          })
 
           console.log(body)
-          const response = await fetch("/whatever/the/endpoint/is", {
+          const response = await fetch("https://18.222.229.39:5000/predict", {
             method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
             body
           })
           const data = await response.json();
-          /*setModelTime(prevModelTime => ({
-            model: Math.max(0, prevModelTime.model - data.timeTaken) // Ensures time doesn't go negative
-          }));*/
-          setModelTime({
-            model: data.remainingTime  // Assuming 'remainingTime' is the field with the remaining time
-          });
-          onDrop(data.source, data.target, data.piece)
+
+          const moved = data.move
+          console.log("Move: ", moved.substring(0, 2))
+          console.log("Piece: ", chess.get(moved.substring(0, 2)));
+          onDrop(moved.substring(0, 2), moved.substring(2, 4), chess.get(moved.substring(0, 2)).type)
         }
         catch (error){
           console.error("Failed to get move from model: ", error)
         }
       }
-  
+
     }
     fetchModel();
 
   }, [currentTurn, chess, modelTime, previousMoves]);
 
-  
+
 
   useEffect(() => {
     const timer = setInterval(() =>{
@@ -75,7 +76,10 @@ function Game({ players, room, orientation, cleanup }) {
       }
       else{
         if(currentTurn === 'b'){
-          console.log("hi i update somewhere else")
+          setModelTime(prevTime => ({
+            ...prevTime,
+            [currentTurn] : (prevTime[currentTurn] > 0)? prevTime[currentTurn] - 1: 0
+          }));
         }
         else{
         setPlayerTime(prevTime => ({
@@ -108,7 +112,7 @@ function Game({ players, room, orientation, cleanup }) {
             if(chess.isCheckmate()){
                 setOver(
                     `Checkmate! ${chess.turn() === "w" ? "Black" : "White"} wins!`
-                  ); 
+                  );
             }
             else if(chess.isDraw()){
                 setOver("Draw");
@@ -121,7 +125,7 @@ function Game({ players, room, orientation, cleanup }) {
     }
     catch(e){
         return null;
-    } 
+    }
   }, [chess, endByTime]);
 
   function onDrop(source, target, piece) {
@@ -148,7 +152,7 @@ function Game({ players, room, orientation, cleanup }) {
           from: move.from,
           to:move.to,
           piece: move.piece,
-          promotion: (move.flags.search('p') !== -1)? move.promotion : "none",
+          promotion: (move.flags.search('p') !== -1)? move.promotion : null,
           color: (move.color == 'w')
         })
         return newMoves.slice(-2)
@@ -158,21 +162,21 @@ function Game({ players, room, orientation, cleanup }) {
           from: move.from,
           to:move.to,
           piece: move.piece,
-          promotion: (move.flags.search('p') !== -1)? move.promotion : "none",
+          promotion: (move.flags.search('p') !== -1)? move.promotion : null,
           color: (move.color == 'w')
         })
       }
-      
+
     })
     console.log(previousMoves)
     return true;
-  } 
-  
+  }
+
   // Game component returned jsx
   return (
     <>
       <div className="board">
-        <Chessboard position={fen} onPieceDrop={onDrop} /> 
+        <Chessboard position={fen} onPieceDrop={onDrop} />
         <div className="timer">
           White Time: {playerTime.w}s
         </div>

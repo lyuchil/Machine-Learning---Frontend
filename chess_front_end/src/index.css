@@ -1,0 +1,60 @@
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+.board-container {
+  display: flex;
+  justify-content: center; /* Center the child elements horizontally */
+  align-items: center; /* Center the child elements vertically */
+  height: 100vh; /* Set the container height to 100% of the viewport height */
+  background-color: #f0f0f0; /* Set the background color */
+  background-image: url('./jon-moore-5fIoyoKlz7A-unsplash.jpg'); /* Set the background image */
+  background-size: cover; /* Cover the entire container */
+  background-position: center; 
+}
+
+.board {
+  /* Add styles for the chessboard */
+  width: 80vw; /* Set the width of the chessboard to 80% of the viewport width */
+  max-width: 600px; /* Set a maximum width for the chessboard */
+  height: 80vh; /* Set the height of the chessboard to 80% of the viewport height */
+  max-height: 600px; /* Set a maximum height for the chessboard */
+}
+
+
+.timers-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.white-timer,
+.black-timer {
+  font-size: 18px;
+  padding: 10px;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  margin: 10px;
+}
+
+.white-timer {
+  position: absolute;
+  bottom: 100px; /* Adjust the distance from the bottom */
+}
+
+.black-timer {
+  position: absolute;
+  top: 100px; /* Adjust the distance from the top */
+}
+
+.currentPlayer{
+  font-size: 18px;
+  padding: 10px;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  margin: 10px;
+}

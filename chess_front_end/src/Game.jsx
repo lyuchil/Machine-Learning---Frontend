@@ -2,16 +2,15 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
 import CustomDialog from "./components/CustomDialog";
+import "./index.css";
 
 function Game({ players, room, orientation, cleanup }) {
   const chess = useMemo(() => new Chess(), []); // <- 1
   const [fen, setFen] = useState(chess.fen()); // <- 2
   const [over, setOver] = useState("");
   const [playerTime, setPlayerTime] = useState({
-    w: 600
-  })
-  const [modelTime, setModelTime] = useState({
-    model:600
+    w: 600,
+    b: 600
   })
   const [currentTurn, setCurrentTurn] = useState("w");
   const [endByTime, setEndByTime] = useState({
@@ -20,6 +19,8 @@ function Game({ players, room, orientation, cleanup }) {
   })
 
   const [previousMoves, setPreviousMoves] = useState([])
+
+  useEffect(()=> {})
 
   useEffect(()=> {
     const fetchModel = async () =>{
@@ -35,7 +36,7 @@ function Game({ players, room, orientation, cleanup }) {
             player: chess.getCastlingRights("w"),
             model: chess.getCastlingRights("b")
           }
-          const modelMeta = [modelTime.model, 0, castlingRights.player.q, castlingRights.player.k, castlingRights.model.q, castlingRights.model.k]
+          const modelMeta = [playerTime.b, 0, castlingRights.player.q, castlingRights.player.k, castlingRights.model.q, castlingRights.model.k]
 
           const body = JSON.stringify({
             gameState,
@@ -65,7 +66,7 @@ function Game({ players, room, orientation, cleanup }) {
     }
     fetchModel();
 
-  }, [currentTurn, chess, modelTime, previousMoves]);
+  }, [currentTurn, chess, previousMoves]);
 
 
 
@@ -75,31 +76,24 @@ function Game({ players, room, orientation, cleanup }) {
         clearInterval(timer);
       }
       else{
-        if(currentTurn === 'b'){
-          setModelTime(prevTime => ({
-            ...prevTime,
-            [currentTurn] : (prevTime[currentTurn] > 0)? prevTime[currentTurn] - 1: 0
-          }));
-        }
-        else{
         setPlayerTime(prevTime => ({
           ...prevTime,
           [currentTurn] : (prevTime[currentTurn] > 0)? prevTime[currentTurn] - 1: 0
         }));
       }
-    }
+    
     }, 1000);
     return ()=>clearInterval(timer);
-  },[currentTurn, chess, playerTime, modelTime]);
+  },[currentTurn, chess, playerTime]);
 
   useEffect(() => {
-    if (playerTime.w <= 0 || modelTime.model <= 0) {
+    if (playerTime.w <= 0 || playerTime.b <= 0) {
       setEndByTime({
         w: playerTime.w <= 0,
-        m: modelTime.model <= 0
+        m: playerTime.b <= 0
       });
     }
-  }, [playerTime, modelTime]);
+  }, [playerTime]);
 
   const makeMove = useCallback((move) => {
     try{
@@ -175,13 +169,18 @@ function Game({ players, room, orientation, cleanup }) {
   // Game component returned jsx
   return (
     <>
-      <div className="board">
+      <div className="board-container">
+        <div className="board">
         <Chessboard position={fen} onPieceDrop={onDrop} />
-        <div className="timer">
-          White Time: {playerTime.w}s
         </div>
-        <div className="timer">
-        Black Time: {modelTime.model}s
+        <div className="timer-container">
+          <div className="black-timer">Black Time: {playerTime.b}s</div>
+          <div className="white-timer">White Time: {playerTime.w}s</div>
+        </div>
+        <div className="timer-container">
+        <div className="currentPlayer">
+          Current Player: {(currentTurn!= 'b')? " White" : " Black"}
+        </div>
         </div>
       </div>
       <CustomDialog // <- 5

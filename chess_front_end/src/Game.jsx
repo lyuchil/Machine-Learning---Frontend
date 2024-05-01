@@ -4,6 +4,10 @@ import { Chess } from "chess.js";
 import CustomDialog from "./components/CustomDialog";
 import "./index.css";
 
+function delay(duration) {
+  return new Promise(resolve => setTimeout(resolve, duration));
+}
+
 function Game({ players, room, orientation, cleanup }) {
   const chess = useMemo(() => new Chess(), []); // <- 1
   const [fen, setFen] = useState(chess.fen()); // <- 2
@@ -44,7 +48,7 @@ function Game({ players, room, orientation, cleanup }) {
           })
 
           console.log(body)
-          const response = await fetch("https://18.222.229.39:5000/predict", {
+          const response = await fetch("http://18.222.229.39:5000/predict", {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -56,6 +60,8 @@ function Game({ players, room, orientation, cleanup }) {
           const moved = data.move
           console.log("Move: ", moved.substring(0, 2))
           console.log("Piece: ", chess.get(moved.substring(0, 2)));
+          const randomDelay = Math.floor(Math.random() * (4000 - 1000 + 1)) + 1000;
+          await delay(randomDelay);
           onDrop(moved.substring(0, 2), moved.substring(2, 4), chess.get(moved.substring(0, 2)).type)
         }
         catch (error){
@@ -81,7 +87,7 @@ function Game({ players, room, orientation, cleanup }) {
           [currentTurn] : (prevTime[currentTurn] > 0)? prevTime[currentTurn] - 1: 0
         }));
       }
-    
+
     }, 1000);
     return ()=>clearInterval(timer);
   },[currentTurn, chess, playerTime]);

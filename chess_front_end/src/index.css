@@ -2,6 +2,7 @@ body, html {
   margin: 0;
   padding: 0;
   height: 100%;
+  background-color: #fefdfa;
 }
 
 .board-container {
@@ -9,10 +10,9 @@ body, html {
   justify-content: center; /* Center the child elements horizontally */
   align-items: center; /* Center the child elements vertically */
   height: 100vh; /* Set the container height to 100% of the viewport height */
-  background-color: #f0f0f0; /* Set the background color */
-  background-image: url('./jon-moore-5fIoyoKlz7A-unsplash.jpg'); /* Set the background image */
+  background-color: #fefdfa; /* Set the background color */
   background-size: cover; /* Cover the entire container */
-  background-position: center; 
+  background-position: center;
 }
 
 .board {
